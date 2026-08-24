@@ -1,0 +1,17 @@
+{
+  "name": "project-hail-mary",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A hub of friends to share their media consumption — one 3D room per person.",
+  "scripts": {
+    "build": "node build.mjs",
+    "check": "node tools/check.mjs"
+  },
+  "dependencies": {
+    "three": "^0.185.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}
