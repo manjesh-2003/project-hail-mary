@@ -88,6 +88,108 @@ body{
 body.skymode .plaque,body.skymode .moodbar,body.skymode .hint{opacity:0; pointer-events:none}
 body.lights-out .hint{background:rgba(10,8,12,.9)}
 
+.plaque button{
+  pointer-events:auto; cursor:pointer; margin-left:4px;
+  background:transparent; color:var(--foil);
+  border:1px solid var(--hud-line); border-radius:999px;
+  padding:5px 12px; font:600 11px/1 Karla,sans-serif; letter-spacing:.06em;
+}
+.plaque button:hover{background:rgba(201,162,74,.14); color:#F3E6CC}
+body.skymode .plaque button{display:none}
+
+/* ── editor ──────────────────────────────── */
+.tabs{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px;
+  border-bottom:1px solid var(--paper-edge); padding-bottom:12px}
+.tab{border:1px solid var(--paper-edge); background:transparent; color:var(--muted);
+  font:600 12px/1 Karla,sans-serif; letter-spacing:.08em; text-transform:uppercase;
+  padding:9px 14px; border-radius:2px; cursor:pointer}
+.tab em{font-style:normal; opacity:.6; margin-left:5px}
+.tab.on{background:var(--ink); color:var(--paper); border-color:var(--ink)}
+.rowactions{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:16px}
+.btn{display:inline-flex; align-items:center; gap:8px; cursor:pointer;
+  border:1px solid var(--ink); background:var(--ink); color:var(--paper);
+  font:600 13px/1 Karla,sans-serif; padding:12px 20px; border-radius:2px}
+.btn.ghost{background:transparent; color:var(--ink); border-color:var(--paper-edge)}
+.btn.tiny{padding:8px 13px; font-size:12px}
+.btn.danger{background:#8E4034; border-color:#8E4034; color:#F6EEE8}
+.btn.ghost.danger{background:transparent; color:#8E4034; border-color:#C9A79E}
+.btn:hover{opacity:.88}
+.btn:disabled{opacity:.5; cursor:default}
+.err{color:#8E4034; font-size:13px; margin:10px 0 0; line-height:1.5}
+
+.syncbar{display:flex; align-items:center; gap:11px; flex-wrap:wrap;
+  background:var(--paper-2); border-radius:3px; padding:11px 14px; margin-bottom:18px;
+  font-size:12.5px; color:var(--muted)}
+.syncbar .dot{width:8px; height:8px; border-radius:50%; background:#B0A08C; flex:none}
+.syncbar .dot.on{background:#4F7C5E; box-shadow:0 0 0 3px rgba(79,124,94,.2)}
+.syncbar span:nth-child(2){flex:1; min-width:180px}
+code{font:500 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;
+  background:var(--paper-2); padding:2px 5px; border-radius:2px}
+
+.mlist{list-style:none; margin:0; padding:0}
+.mrow{display:flex; align-items:center; gap:14px; padding:12px 0;
+  border-bottom:1px solid var(--paper-edge)}
+.mrow:last-child{border-bottom:none}
+.chip{width:6px; align-self:stretch; border-radius:99px; flex:none}
+.mmain{flex:1; min-width:0}
+.mmain h4{margin:0 0 3px; font:600 16px/1.25 Fraunces,Georgia,serif}
+.mmain p{margin:0; font-size:12.5px; color:var(--muted)}
+.mbtns{display:flex; gap:8px; flex:none}
+
+.lookup{display:flex; gap:10px; align-items:flex-end; margin-bottom:12px}
+.fld{display:flex; flex-direction:column; gap:6px}
+.fld.grow{flex:1}
+.fld span{font:600 10.5px/1 Karla,sans-serif; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--muted)}
+.fld input,.fld select,.fld textarea{
+  font:400 14px/1.4 Karla,sans-serif; color:var(--ink);
+  background:#F7F0E4; border:1px solid var(--paper-edge); border-radius:2px;
+  padding:10px 12px; width:100%;
+}
+.fld textarea{resize:vertical; font-family:Karla,sans-serif}
+.fld input:focus,.fld select:focus,.fld textarea:focus{
+  outline:2px solid var(--amber); outline-offset:-1px; background:#FFFBF2}
+.fld input[type="color"]{padding:3px; height:42px; width:64px}
+.colrow{display:flex; gap:10px; align-items:center}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:6px 0 18px}
+.grid2 .span2{grid-column:1 / -1}
+
+.results{border:1px solid var(--paper-edge); border-radius:3px; margin-bottom:14px;
+  max-height:270px; overflow:auto; background:#F7F0E4}
+.hit{display:flex; gap:12px; align-items:center; width:100%; text-align:left;
+  background:transparent; border:none; border-bottom:1px solid var(--paper-edge);
+  padding:9px 12px; cursor:pointer; color:var(--ink)}
+.hit:last-child{border-bottom:none}
+.hit:hover{background:var(--paper-2)}
+.hit img,.hit .nocov{width:38px; height:54px; object-fit:cover; border-radius:2px;
+  background:var(--paper-2); flex:none}
+.hitmain{display:flex; flex-direction:column; gap:3px; min-width:0}
+.hitmain b{font:600 14px/1.25 Fraunces,Georgia,serif}
+.hitmain em{font-style:normal; font-size:12px; color:var(--muted)}
+
+.coverblock{display:flex; gap:18px; align-items:flex-start;
+  border-top:1px solid var(--paper-edge); padding-top:18px}
+.coverprev{width:112px; height:160px; flex:none; border-radius:3px; overflow:hidden;
+  background:var(--paper-2); display:grid; place-items:center;
+  border:1px dashed var(--paper-edge)}
+.coverprev img{width:100%; height:100%; object-fit:cover}
+.coverprev span{font-size:11.5px; color:var(--muted); letter-spacing:.1em; text-transform:uppercase}
+.coveracts{display:flex; flex-direction:column; gap:9px; align-items:flex-start}
+.coveracts strong{font:600 15px/1 Fraunces,Georgia,serif}
+.coveracts .shelfnote{margin:0}
+.cover .art{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0}
+.cover>*{position:relative; z-index:1}
+.cover::before{content:""; position:absolute; inset:0; z-index:0;
+  background:linear-gradient(180deg,rgba(0,0,0,.42),rgba(0,0,0,.15) 40%,rgba(0,0,0,.72))}
+
+#toast{position:fixed; left:50%; bottom:96px; transform:translate(-50%,12px);
+  z-index:50; background:rgba(22,16,20,.94); color:#EDE1D0;
+  border:1px solid var(--hud-line); border-radius:999px; padding:11px 22px;
+  font:500 13px/1 Karla,sans-serif; opacity:0; pointer-events:none;
+  transition:opacity .2s ease, transform .2s ease}
+#toast.on{opacity:1; transform:translate(-50%,0)}
+#toast.bad{background:rgba(96,32,26,.95)}
+
 /* ── panels ──────────────────────────────── */
 .scrim{
   position:fixed; inset:0; background:rgba(8,5,10,.66); backdrop-filter:blur(4px);
@@ -97,9 +199,15 @@ body.lights-out .hint{background:rgba(10,8,12,.9)}
 .sheet{
   width:min(940px,100%); background:var(--paper); color:var(--ink);
   border-radius:4px; box-shadow:0 30px 80px rgba(0,0,0,.6);
-  animation:rise .3s cubic-bezier(.2,.8,.3,1);
+  animation:rise .28s cubic-bezier(.2,.8,.3,1);
 }
-@keyframes rise{from{opacity:0; transform:translateY(14px) scale(.985)}}
+/* The entry animation moves the panel but never touches its opacity. On a
+   slow device a stalled animation would otherwise leave the sheet see-through
+   and the room legible straight through the text. */
+@keyframes rise{
+  from{transform:translateY(14px) scale(.985)}
+  to{transform:none}
+}
 .sheet header{display:flex; align-items:center; justify-content:space-between; gap:16px;
   padding:20px 26px 14px; border-bottom:1px solid var(--paper-edge)}
 .sheet h2{margin:0; font:600 25px/1.15 Fraunces,Georgia,serif; text-wrap:balance}
@@ -165,6 +273,10 @@ body.lights-out .hint{background:rgba(10,8,12,.9)}
   .plaque h1{font-size:16px} .hint{font-size:11.5px; padding:7px 14px}
   .moodbar{padding:7px 12px; gap:8px} #moodname,.moodbar .lab{display:none}
   #moods button{width:24px; height:24px}
+  .grid2{grid-template-columns:1fr}
+  .coverblock{flex-direction:column}
+  .mrow{flex-wrap:wrap}
+  .plaque{flex-wrap:wrap}
 }
 @media (prefers-reduced-motion:reduce){ *{animation-duration:.01ms !important} }
 </style>
@@ -172,7 +284,10 @@ body.lights-out .hint{background:rgba(10,8,12,.9)}
 <canvas id="gl"></canvas>
 
 <div class="hud">
-  <div class="plaque"><h1 id="owner">Sid's Loft</h1><span id="count">10 volumes</span></div>
+  <div class="plaque">
+    <h1 id="owner">Sid's Loft</h1><span id="count">10 volumes</span>
+    <button id="shelfbtn" title="Edit the shelves">✎ Shelves</button>
+  </div>
   <div class="hudrow">
     <div class="moodbar">
       <span class="lab">Lights</span>

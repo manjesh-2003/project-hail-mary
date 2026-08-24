@@ -5,9 +5,10 @@ import { buildSwitch } from "./core/mood.js";
 import { initPhotos, openPhoto } from "./core/photos.js";
 import {
   initPanels, isOpen, openBook, openNowPlaying, openStats,
-  openBay, openWombats, openStreet
+  openBay, openWombats, openStreet, openManager, openEditor
 } from "./core/panels.js";
-import { LIB, ROOM_OWNER } from "./data/library.js";
+import * as store from "./core/store.js";
+import { ROOM_OWNER } from "./data/seed.js";
 import { buildRoom, roofY, hotspots, routes, skylightAnchor, pokeWombats } from "./rooms/sid-loft.js";
 
 /* The raised deck is only reachable by its steps, so a destination on the
@@ -27,7 +28,7 @@ const ndc = new THREE.Vector2();
 let player, rig, keyStep, hovered = null;
 
 const HINT = {
-  book:   o => `<b>${LIB[o.userData.index].t}</b> — walk over and open it`,
+  book:   o => `<b>${store.get(o.userData.id)?.title || "A book"}</b> — walk over and open it`,
   screen: () => `<b>The monitor</b> — what's playing right now`,
   tv:     () => `<b>The TV</b> — the count so far`,
   wombat: () => `<b>Pip &amp; Barrel</b> — go and say hello`,
@@ -92,7 +93,7 @@ function use(o) {
   const key = kind === "bay" ? `bay_${o.userData.bay}` : kind;
   const spot = hotspots[key] || hotspots[kind];
   const open = () => {
-    if (kind === "book") openBook(o.userData.index);
+    if (kind === "book") openBook(o.userData.id);
     else if (kind === "screen") openNowPlaying();
     else if (kind === "tv") openStats();
     else if (kind === "wombat") { pokeWombats(); openWombats(); }
@@ -123,11 +124,12 @@ function updateHover() {
 }
 
 /* ── go ────────────────────────────────────── */
-function start() {
+async function start() {
   try {
     initEngine($("#gl"));
     initPanels();
     initPhotos();
+    await store.init();
     buildRoom();
 
     player = createPlayer(S.scene);
@@ -136,10 +138,15 @@ function start() {
     buildSwitch();
 
     if (new URLSearchParams(location.search).has("debug"))
-      window.__phm = { S, player, rig, use, pick, enterSky, exitSky, THREE };
+      window.__phm = { S, player, rig, use, pick, enterSky, exitSky, THREE, store, openManager, openEditor };
 
     $("#owner").textContent = `${ROOM_OWNER}'s Loft`;
-    $("#count").textContent = `${LIB.length} volumes`;
+    const setCount = () => {
+      const n = store.count();
+      $("#count").textContent = `${n} ${n === 1 ? "volume" : "volumes"}`;
+    };
+    setCount(); store.onChange(setCount);
+    $("#shelfbtn").addEventListener("click", () => openManager());
     $("#skyexit").addEventListener("click", exitSky);
     addEventListener("keydown", e => { if (e.key === "Escape" && S.mode === "sky") exitSky(); });
     addEventListener("pointermove", e => {
