@@ -3,7 +3,9 @@ import { S, orient, addClickable, onFrame } from "../core/engine.js";
 import { world } from "../core/player.js";
 import { registerStrip, registerLight, registerLamp, registerAmbient } from "../core/mood.js";
 import { registerFrame } from "../core/photos.js";
-import { LIB, WATCHING, UP_NEXT, BAYS } from "../data/library.js";
+import * as store from "../core/store.js";
+import { colourFor, spineWidth, KINDS } from "../data/schema.js";
+import { BAYS } from "../data/seed.js";
 import {
   cv, tex, rnd, pick, woodTexture, brickTexture, plasterTexture, fabricTexture,
   plainRugTexture, indianRugTexture, spineTexture, screenTexture, tvTexture,
@@ -33,7 +35,17 @@ export const STAIR = { x0: -4.16, x1: -3.24, z0: -5.20, z1: -3.58 };
 export const hotspots = {};   // kind -> { stand:[x,z], path?:[[x,z]…] }
 export const routes = { up: [], down: [] };   // between floor and raised deck
 const MATS = {};
-let screenMesh, screenIdx = 0, screenTimer = 0;
+let screenMesh, screenIdx = 0, screenTimer = 0, tvMesh = null;
+
+/* Placeholders so the screens never render an empty card. */
+const BLANK = { title: "Nothing on", altTitle: "", year: "", creator: "the shelf",
+  units: 1, done: 0, genres: [], colour: "#3A3542", kind: "anime" };
+const nowPlaying = () => {
+  const w = store.all().filter(i => i.status === "watching");
+  return w.length ? w : [BLANK];
+};
+const upNext = () =>
+  store.all().find(i => i.status === "planned") || store.all()[0] || BLANK;
 
 const block = (x0, x1, z0, z1) => world.blocks.push({ x0, x1, z0, z1 });
 
@@ -300,7 +312,7 @@ function buildDesk() {
   const pa = sgeo.attributes.position;
   for (let i = 0; i < pa.count; i++) pa.setZ(i, -((pa.getX(i) / (SW / 2)) ** 2) * .085);
   sgeo.computeVertexNormals();
-  const scr = new THREE.CanvasTexture(screenTexture(WATCHING[0]));
+  const scr = new THREE.CanvasTexture(screenTexture(nowPlaying()[0]));
   scr.colorSpace = THREE.SRGBColorSpace;
   screenMesh = new THREE.Mesh(sgeo, new THREE.MeshBasicMaterial({ map: scr, toneMapped: false }));
   screenMesh.position.set(-R.HW + .40, 1.15, .55);
@@ -412,12 +424,12 @@ function buildDesk() {
   hotspots.screen = { stand: [-R.HW + 1.3, -.3] };
 
   onFrame((t, dt) => {
-    if (WATCHING.length < 2) return;
+    const now = nowPlaying();
     screenTimer += dt;
     if (screenTimer > 7) {
       screenTimer = 0;
-      screenIdx = (screenIdx + 1) % WATCHING.length;
-      screenMesh.material.map.image = screenTexture(WATCHING[screenIdx]);
+      screenIdx = now.length ? (screenIdx + 1) % now.length : 0;
+      screenMesh.material.map.image = screenTexture(now[screenIdx]);
       screenMesh.material.map.needsUpdate = true;
     }
   });
@@ -441,9 +453,14 @@ function buildGableWall() {
 
   const tvW = 2.05, tvH = 1.16;
   const tvPanel = new THREE.Mesh(new THREE.PlaneGeometry(tvW, tvH),
-    new THREE.MeshBasicMaterial({ map: tex(tvTexture(UP_NEXT)), toneMapped: false }));
+    new THREE.MeshBasicMaterial({ map: tex(tvTexture(upNext())), toneMapped: false }));
   tvPanel.position.set(1.05, 1.36, Z + .075);
   addClickable(tvPanel, "tv"); g.add(tvPanel);
+  tvMesh = tvPanel;
+  store.onChange(() => {
+    tvMesh.material.map.image = tvTexture(upNext());
+    tvMesh.material.map.needsUpdate = true;
+  });
   const tvFrame = new THREE.Mesh(new THREE.BoxGeometry(tvW + .06, tvH + .06, .06),
     new THREE.MeshStandardMaterial({ color: "#141418", roughness: .45 }));
   tvFrame.position.set(1.05, 1.36, Z + .04); tvFrame.castShadow = true; g.add(tvFrame);
@@ -471,6 +488,8 @@ function buildGableWall() {
 }
 
 /* ── anime collection alcove ───────────────── */
+let shelfBooks = null;      // the group the spines live in, rebuilt on change
+
 function buildCollection() {
   const Z = -R.D / 2 + .04;
   const g = new THREE.Group();
@@ -503,43 +522,70 @@ function buildCollection() {
     new THREE.MeshStandardMaterial({ map: tex(plaqueTexture(BAYS.anime.label)), roughness: .35, metalness: .65 }));
   plaque.position.set(X, Y0 - .075, Z + DP + .002); g.add(plaque);
 
-  const spineW = eps => .040 + .013 * Math.log2(1 + eps / 12);
-  [LIB.slice(0, 5), LIB.slice(5)].forEach((set, hi) => {
-    const y = rowY[hi + 1];
-    const total = set.reduce((s, b) => s + spineW(b.eps) + .008, 0);
+  shelfBooks = new THREE.Group();
+  g.add(shelfBooks);
+  S.scene.add(g);
+
+  const geom = { X, W, DP, Z, gap, rowY };
+  fillShelf(geom);
+  store.onChange(() => fillShelf(geom));
+
+  block(-2.9, -.8, -R.D / 2, -R.D / 2 + .42);
+  hotspots.book = { stand: [X, -R.D / 2 + 1.05] };
+}
+
+/* Re-lay the spines from whatever is on the shelf now. Called on every
+   change, so adding a title in the editor puts a book on the wall. */
+function fillShelf({ X, W, DP, Z, gap, rowY }) {
+  if (!shelfBooks) return;
+  for (const m of [...shelfBooks.children]) {
+    shelfBooks.remove(m);
+    m.geometry?.dispose?.();
+    (Array.isArray(m.material) ? m.material : [m.material]).forEach(mat => {
+      mat?.map?.dispose?.(); mat?.dispose?.();
+    });
+  }
+  for (let i = S.clickable.length - 1; i >= 0; i--)
+    if (S.clickable[i].userData.kind === "book") S.clickable.splice(i, 1);
+
+  const items = store.byBay("anime");
+  const INNER = W - .22;
+  // as many rows as it takes, spilling onto the shelves the props used to have
+  const rows = [];
+  let row = [], width = 0;
+  for (const it of items) {
+    const w = spineWidth(it) + .008;
+    if (width + w > INNER && row.length) { rows.push(row); row = []; width = 0; }
+    row.push(it); width += w;
+  }
+  if (row.length) rows.push(row);
+
+  const slots = [rowY[1], rowY[2], rowY[0], rowY[3]];
+  rows.slice(0, slots.length).forEach((set, ri) => {
+    const y = slots[ri];
+    const total = set.reduce((s, it) => s + spineWidth(it) + .008, 0);
     let x = X - total / 2;
-    set.forEach(b => {
-      const i = LIB.indexOf(b);
-      const w = spineW(b.eps), h = gap * .68 + (i % 3) * .012, d = .20;
+    set.forEach((it, k) => {
+      const w = spineWidth(it), h = gap * .68 + (k % 3) * .012, d = .20;
       const paper = new THREE.MeshStandardMaterial({ color: "#E8DECC", roughness: .95 });
-      const side = new THREE.MeshStandardMaterial({ color: b.c, roughness: .78 });
+      const side = new THREE.MeshStandardMaterial({ color: colourFor(it), roughness: .78 });
       const book = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), [
         side, side, paper, paper,
-        new THREE.MeshStandardMaterial({ map: tex(spineTexture(b)), roughness: .68 }), side]);
+        new THREE.MeshStandardMaterial({ map: tex(spineTexture(it)), roughness: .68 }), side]);
       book.position.set(x + w / 2, y + h / 2, Z + .04 + d / 2 + .03);
       book.castShadow = book.receiveShadow = true;
-      if (b.status === "planned") { book.rotation.z = .17; book.position.x += .035; }
-      addClickable(book, "book", { index: i, baseZ: book.position.z });
-      g.add(book);
+      if (it.status === "planned") { book.rotation.z = .17; book.position.x += .035; }
+      addClickable(book, "book", { id: it.id, baseZ: book.position.z });
+      shelfBooks.add(book);
       x += w + .008;
     });
   });
 
-  const propC = ["#7C3B32", "#2F5A46", "#2B475E", "#8A6A2A", "#3A3542", "#6B3A20"];
-  [rowY[0], rowY[3]].forEach(y => {
-    let x = X - W / 2 + .16;
-    for (let i = 0; i < 12 && x < X + W / 2 - .3; i++) {
-      const w = rnd(.035, .07), h = rnd(gap * .42, gap * .6);
-      const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, .19),
-        new THREE.MeshStandardMaterial({ color: pick(propC), roughness: .85 }));
-      b.position.set(x + w / 2, y + h / 2, Z + .16); b.castShadow = true; g.add(b);
-      x += w + .005;
-    }
-  });
-
-  S.scene.add(g);
-  block(-2.9, -.8, -R.D / 2, -R.D / 2 + .42);
-  hotspots.book = { stand: [X, -R.D / 2 + 1.05] };
+  const bookend = new THREE.Mesh(new THREE.BoxGeometry(.028, .26, .19),
+    new THREE.MeshStandardMaterial({ color: "#8A7038", roughness: .3, metalness: .8 }));
+  bookend.position.set(X + W / 2 - .1, rowY[1] + .13, Z + .16);
+  bookend.castShadow = true; shelfBooks.add(bookend);
+  void DP;
 }
 
 /* ── the other shelf bays ──────────────────── */
