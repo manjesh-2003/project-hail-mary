@@ -9,6 +9,7 @@
     "check": "node tools/check.mjs"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.112.4",
     "three": "^0.185.1"
   },
   "devDependencies": {

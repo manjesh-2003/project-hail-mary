@@ -1,4 +1,4 @@
-/* Bundles a room into one self-contained HTML file in dist/.
+/* Bundles a room into one self-contained HTML file.
    Everything is inlined because the pages have to run from a file://
    path, from GitHub Pages, and from an Artifact host with a strict CSP. */
 
@@ -9,7 +9,9 @@ import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const ROOMS = {
-  "sid-loft": { entry: "src/main.js", shell: "src/shell.html", out: "dist/sid-loft.html" }
+  /* out/ is docs/ because that is what GitHub Pages serves: docs/index.html
+     lands at https://<user>.github.io/<repo>/ with no path after it. */
+  "sid-loft": { entry: "src/main.js", shell: "src/shell.html", out: "docs/index.html", body: "dist/sid-loft.body.html" }
 };
 
 const which = process.argv[2] || "sid-loft";
@@ -38,8 +40,11 @@ const page =
   '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n' +
   "</head>\n<body>\n" + body + "\n</body>\n</html>\n";
 
-mkdirSync(resolve(here, "dist"), { recursive: true });
+mkdirSync(dirname(resolve(here, cfg.out)), { recursive: true });
 writeFileSync(resolve(here, cfg.out), page);
-writeFileSync(resolve(here, cfg.out.replace(".html", ".body.html")), body);
+/* The body on its own, for publishing as an Artifact (which supplies its own
+   <head>). Build output, not source — dist/ is gitignored. */
+mkdirSync(dirname(resolve(here, cfg.body)), { recursive: true });
+writeFileSync(resolve(here, cfg.body), body);
 
 console.log(`${which}: bundle ${Math.round(js.length / 1024)}KB · page ${Math.round(page.length / 1024)}KB → ${cfg.out}`);
