@@ -146,6 +146,14 @@ async function start() {
       $("#count").textContent = `${n} ${n === 1 ? "volume" : "volumes"}`;
     };
     setCount(); store.onChange(setCount);
+
+    /* Signing in or out swaps the storage underneath us. The sign-in link
+       reloads the page anyway, so this mostly covers a session expiring
+       while the room is open. */
+    store.auth.onAuth?.(async (session, prev) => {
+      if (!!session === store.isShared()) return;   // nothing actually changed
+      await store.reload();
+    });
     $("#shelfbtn").addEventListener("click", () => openManager());
     $("#skyexit").addEventListener("click", exitSky);
     addEventListener("keydown", e => { if (e.key === "Escape" && S.mode === "sky") exitSky(); });
